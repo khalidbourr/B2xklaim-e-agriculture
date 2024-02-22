@@ -1,0 +1,9 @@
+net MultiRobot physical "localhost:9999" {
+
+	node Drone {
+		eval(new DroneBehavior(Tractor))@self
+	}
+	node Tractor {
+		eval(new TractorBehavior())@self
+	}
+}

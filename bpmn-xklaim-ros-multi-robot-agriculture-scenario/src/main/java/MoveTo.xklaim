@@ -1,0 +1,114 @@
+import ros.Publisher
+import util.XklaimToRosConnection
+import messages.Twist
+import ros.SubscriptionRequestMsg
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
+import messages.Odometry
+import util.EulerAngles
+
+
+
+proc MoveTo(String edge, Double x, Double y){
+
+      /* write your code here */ 
+      
+      
+      
+    val local = self
+
+    val robotId = "tractor_1"
+
+    // set the tolerance for distance and angle error 
+    val distanceTolerance = 0.1
+    val angleTolerance = 0.1
+    val targetOffset = 0.35
+
+    // connect to the ROS bridge
+    val bridge = new XklaimToRosConnection("ws://0.0.0.0:9090")
+
+    // initialize a publisher for the topic related to the control of the robot's wheels
+    val pub = new Publisher("/" + robotId + "/cmd_vel", "geometry_msgs/Twist", bridge)
+
+    // create the message for sending velocity commands
+    val vel_msg = new Twist()
+
+    // value of pi
+    val PI = 3.141592654
+
+    // adaptive gain coefficients
+    val double K_l_max = 1.1 // max linear velocity gain
+    val double K_a_max = 1.2 // max angular velocity gain
+    val double K_l_min = 0.1 // min linear velocity gain
+    val double K_a_min = 0.1 // min angular velocity gain
+
+    // distances at which max and min gains are applied
+    val double maxDistance = 5.0 // distance at which max linear speed is applied
+    val double minDistance = 0.5 // distance at which min linear speed is applied
+
+    // subscribe to the robot's odometry sensor data
+    bridge.subscribe(
+        SubscriptionRequestMsg.generate("/" + robotId + "/odom").setType("nav_msgs/Odometry").setThrottleRate(1).setQueueLength(1),
+        [ data, stringRep |
+            var mapper = new ObjectMapper()
+            var JsonNode rosMsgNode = data.get("msg")
+            var Odometry odom = mapper.treeToValue(rosMsgNode, Odometry)
+            var double currentX = odom.pose.pose.position.x
+            var double currentY = odom.pose.pose.position.y
+            var angle = new EulerAngles(odom.pose.pose.orientation)
+            var currentTheta = angle.yaw
+
+            var deltaX = x - currentX
+            var deltaY = y - currentY
+            var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY) // Correctly positioned distance calculation
+            var effectiveDistance = distance - targetOffset // Calculate effective distance considering the offset
+            
+
+            var angular = Math.atan2(deltaY, deltaX)
+            
+            // Calculate the angular error more precisely
+            var headingError = angular - currentTheta
+            if (headingError > PI) {
+                headingError -= (2 * PI)
+            }
+            if (headingError < -PI) {
+                headingError += (2 * PI)
+            }
+
+            // Calculate the adaptive angular velocity
+            var absAngularError = Math.abs(headingError)
+            var angularVelocityFactor = absAngularError / PI // Normalized error
+            var adjustedK_a = K_a_min + (angularVelocityFactor * (K_a_max - K_a_min))
+
+            // Ensure there's a minimum angular velocity for significant angular errors
+            var minAngularVelocity = 0.2 // Adjust based on your robot's capabilities
+            var angularVelocity = adjustedK_a * headingError
+            if (absAngularError > angleTolerance && Math.abs(angularVelocity) < minAngularVelocity) {
+                angularVelocity = Math.copySign(minAngularVelocity, angularVelocity)
+            }
+
+            vel_msg.angular.z = angularVelocity
+
+            // Calculate adaptive linear velocity
+            var double K_l = K_l_min + (Math.min(distance, maxDistance) - minDistance) / (maxDistance - minDistance) * (K_l_max - K_l_min)
+            K_l = Math.max(K_l_min, Math.min(K_l, K_l_max)) // Ensure K_l is within [K_l_min, K_l_max]
+
+            if (effectiveDistance > distanceTolerance) { 
+                if (Math.abs(headingError) > angleTolerance) {
+                    vel_msg.linear.x = 0.0 // Prioritize angular adjustment
+                } else {
+                    vel_msg.linear.x = K_l * effectiveDistance // Proceed with linear movement if within angular tolerance
+                    vel_msg.angular.z = 0.0 // Stop angular adjustment when heading is aligned
+                }
+                pub.publish(vel_msg)                
+            } else {
+                vel_msg.linear.x = 0
+                vel_msg.angular.z = 0
+                pub.publish(vel_msg)
+                bridge.unsubscribe("/" + robotId + "/odom")
+                out(edge)@local // Signal that the robot has reached the target
+            }
+        ]
+    )
+}
+      

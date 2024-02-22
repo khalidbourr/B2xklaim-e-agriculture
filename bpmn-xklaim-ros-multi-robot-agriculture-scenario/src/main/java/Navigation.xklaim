@@ -1,0 +1,90 @@
+import util.XklaimToRosConnection
+import ros.Publisher
+import ros.SubscriptionRequestMsg
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
+import messages.Odometry
+import messages.Twist
+
+proc Navigation(String edge){
+
+      /* write your code here */ 
+      
+      
+      
+    val local = self
+
+    // Connect to the ROS bridge
+    val bridge = new XklaimToRosConnection("ws://0.0.0.0:9090")
+
+    // Initialize a publisher for the topic related to the control of the drone's movement
+    val pub = new Publisher("/drone_1/cmd_vel", "geometry_msgs/Twist", bridge)
+
+    // Define initial position
+	out("position", 0.0,0.0)@self
+	
+
+	
+	// Subscribe to the drone's odometry topic
+	bridge.subscribe(
+	    SubscriptionRequestMsg.generate("/drone_1/odom").setType("nav_msgs/Odometry")
+	        .setThrottleRate(1).setQueueLength(1),
+	    [odometryData, stringRep |
+	        // Parse odometry data
+	        var mapper = new ObjectMapper()
+	        var JsonNode odomNode = odometryData.get("msg")
+	        var Odometry currentOdom = mapper.treeToValue(odomNode, Odometry)
+	        
+	         // Get current positions
+	        var odomX = currentOdom.pose.pose.position.x
+	        var odomY = currentOdom.pose.pose.position.y
+	        
+	        in("position", var Double currentX, var Double currentY)@local
+	        out("position", odomX,odomY)@local
+	       
+	        // Initialize Twist command
+	        var velocity = new Twist()
+	
+
+	
+	         // Define a small tolerance for transitions
+	        val tolerance = 0.2; 
+	
+	        // Zigzag Movement Logic
+	        if (Math.floor(odomY) % 2 == 0) { // For even rows
+	            if (odomX < (9.7 - tolerance)) {
+	                // Move right
+	                velocity.linear.x = 1.5
+	                velocity.linear.y = 0.0
+	            } else if (odomY < (9.7 - tolerance)) {
+	                // Move up to the next line
+	                velocity.linear.x = 0.0
+	                velocity.linear.y = 1.5
+	            } else {
+	                // Stop at the end of the field
+	                velocity.linear.x = 0.0
+	                velocity.linear.y = 0.0
+	            }
+	        } else { // For odd rows
+	            if (odomX > (0.2 + tolerance)) {
+	                // Move left
+	                velocity.linear.x = -1.5
+	                velocity.linear.y = 0.0
+	            } else if (odomY < (9.7 - tolerance)) {
+	                // Move up to the next line
+	                velocity.linear.x = 0.0
+	                velocity.linear.y = 1.5
+	            } else {
+	                // Stop at the end of the field
+	                velocity.linear.x = 0.0
+	                velocity.linear.y = 0.0
+	                bridge.unsubscribe("/drone_1/odom")
+	                out(edge)@local
+	            }
+	        }
+	
+	        // Publish the velocity command
+	        pub.publish(velocity)
+	    ]
+	)
+}

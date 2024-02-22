@@ -1,0 +1,43 @@
+import util.XklaimToRosConnection
+import ros.Publisher
+import messages.Wrench
+import messages.RosString
+
+proc CutGrass(String edge){
+
+    /* write your code here */ 
+      
+      
+    // `bridge` is an established connection to ROS 2
+    val bridge = new XklaimToRosConnection("ws://127.0.0.1:9090")
+
+    // Initialize a publisher for the "/tractor_1/blade_force" topic
+    val pub = new Publisher("/tractor_1/blade_force", "geometry_msgs/msg/Wrench",bridge)
+
+    // Create a new Wrench message to simulate cutting force
+    val wrenchMsg = new Wrench()
+    wrenchMsg.force.x = 0.5 // Simulate a forward force
+    wrenchMsg.force.y = 0.0
+    wrenchMsg.force.z = 0.0
+    wrenchMsg.torque.x = 0.0
+    wrenchMsg.torque.y = 0.0
+    wrenchMsg.torque.z = 0.0
+
+    // Publish the message to apply the cutting force
+    pub.publish(wrenchMsg)
+    
+
+    // 2 seconds delay to simulate time taken to cut grass
+    Thread.sleep(2000)
+    
+    
+    val pubremove = new Publisher("/delete_entity_trigger", "std_msgs/String", bridge)
+
+    // The weed model name to delete
+    val modelName = new RosString()
+    modelName.setData("weed")
+    pubremove.publish(modelName)
+
+    // Signal the completion of the CutGrass process
+    out(edge)@self
+}

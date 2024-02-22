@@ -1,0 +1,21 @@
+proc Activity_Handler(){
+	
+	 
+	    // Wait for a weed detection signal
+        read("weed_detected")@self
+        // Once a weed is detected, read the current position
+        read("position", var Double currentX, var Double currentY)@self
+        
+        println("Weed detected at position: (" + currentX + ", " + currentY + ")")
+        
+        // Emit an event for the detected weed position
+        out("Signal_1fgvsug", currentX, currentY)@self
+        Thread.sleep(500) //500 millisecond, the duration of the signal
+        in('Signal_1fgvsug',var Double X, var Double Y)@self
+        
+		// Repeat the process
+        eval(new Activity_Handler())@self  
+        
+        stop()
+	
+}

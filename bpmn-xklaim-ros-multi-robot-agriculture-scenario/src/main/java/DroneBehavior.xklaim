@@ -1,0 +1,13 @@
+proc DroneBehavior(Locality Tractor){
+
+      eval(new Activity_WeedHandler(Tractor))@self
+      
+      eval(new TakeOff('Flow_1nkd51d'))@self
+      in('Flow_1nkd51d')@self
+      
+      eval(new Explore('Flow_1y8di18'))@self
+      in('Flow_1y8di18')@self
+      
+      eval(new Land('Flow_07o8u8h'))@self
+      in('Flow_07o8u8h')@self
+}

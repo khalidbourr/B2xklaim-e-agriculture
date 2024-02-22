@@ -1,0 +1,13 @@
+proc Explore(String edge){
+
+      eval(new Activity_Handler())@self
+      
+      eval(new WeedDetection('Flow_0a2zlxl'))@self
+      eval(new Navigation('Flow_1wovj1u'))@self
+      in('Flow_0a2zlxl')@self
+      
+      in('Flow_1wovj1u')@self
+      
+      out(edge)@self
+      
+}

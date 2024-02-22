@@ -1,0 +1,14 @@
+proc Activity_WeedHandler(Locality Tractor){
+
+      read('Signal_1fgvsug', var Double x, var Double y)@self
+      
+      // { ... initialization code ... }
+      
+      println("WeedHandler processing detected weed at: (" + x + ", " + y + ")")
+                
+      out('Message_31nq93q', x, y)@Tractor
+      
+      eval(new Activity_WeedHandler(Tractor))@self
+           
+      
+}

@@ -1,0 +1,38 @@
+import util.XklaimToRosConnection
+import ros.SubscriptionRequestMsg
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
+import messages.Range
+
+proc WeedDetection(String edge){
+
+      /* write your code here */ 
+      
+      
+    val local = self
+
+    // Connect to the ROS bridge
+    val bridge = new XklaimToRosConnection("ws://0.0.0.0:9090")
+    
+    	
+	 bridge.subscribe(
+		    SubscriptionRequestMsg.generate("/drone_1/range").setType("sensor_msgs/Range")
+		        .setThrottleRate(11).setQueueLength(1),
+		    [rangeData, stringRep |
+		        // Parse range data
+		        var mapper = new ObjectMapper();
+		        var JsonNode rangeNode = rangeData.get("msg")
+		        var Range currentRange = mapper.treeToValue(rangeNode, Range)		        
+		        if (currentRange.range < 1.4) {
+		            // Print message indicating weed is found
+		            out("weed_detected")@local
+		            Thread.sleep(500)
+		            in("weed_detected")@local 	
+		            bridge.unsubscribe("/drone_1/range") 
+		            out(edge)@local 
+	             }
+		    ]
+		)
+    		           
+   
+}

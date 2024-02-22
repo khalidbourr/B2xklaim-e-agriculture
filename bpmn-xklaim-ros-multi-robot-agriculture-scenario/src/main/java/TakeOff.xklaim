@@ -1,0 +1,31 @@
+import util.XklaimToRosConnection
+import ros.Publisher
+import messages.RosString
+import messages.Twist
+
+proc TakeOff(String edge){
+
+      /* write your code here */ 
+      
+      
+    println("Taking off ..")
+
+    // Connect to the ROS bridge
+    val bridge = new XklaimToRosConnection("ws://0.0.0.0:9090")
+
+    // Initialize a publisher for the custom takeoff trigger topic
+    val pub = new Publisher("/drone_command_trigger", "std_msgs/String", bridge)
+
+    // Create and publish the takeoff trigger message once
+    val triggerMsg = new RosString()
+    triggerMsg.setData("takeoff")
+    pub.publish(triggerMsg)
+
+    Thread.sleep(5500) // Wait to ensure the command is processed
+    
+    val twist = new Twist()
+    pub.publish(twist)
+      
+
+      out(edge)@self
+}
