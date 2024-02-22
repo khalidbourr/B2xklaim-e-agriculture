@@ -1,0 +1,6 @@
+proc WeedDetection(String edge){
+
+      /* write your code here */ 
+
+      out(edge)@self
+}

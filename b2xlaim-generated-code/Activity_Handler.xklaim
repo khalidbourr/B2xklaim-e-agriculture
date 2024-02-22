@@ -1,0 +1,14 @@
+proc Activity_Handler(){
+
+      read('Signal_08f3d6e')@self
+      
+      read('Signal_0qp78ip')@self
+      
+      // { ... initialization code ... }
+      
+      out('Signal_1fgvsug')@self
+      Thread.sleep(Signal_Duration)
+      in('Signal_1fgvsug')@self
+       
+      eval(new Activity_Handler())@self
+}

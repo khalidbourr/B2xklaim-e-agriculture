@@ -1,0 +1,6 @@
+proc Land(String edge){
+
+      /* write your code here */ 
+
+      out(edge)@self
+}

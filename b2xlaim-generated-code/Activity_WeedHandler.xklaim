@@ -1,0 +1,10 @@
+proc Activity_WeedHandler(){
+
+      read('Signal_0kesbda')@Drone
+      
+      // { ... initialization code ... }
+      
+      out('Message_31nq93q')@Tractor
+      
+      eval(new Activity_WeedHandler())@self
+}

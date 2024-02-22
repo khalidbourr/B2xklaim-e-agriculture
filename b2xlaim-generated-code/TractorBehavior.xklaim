@@ -1,0 +1,13 @@
+proc TractorBehavior(){
+
+      in('Message_31nq93q')@self
+      
+      eval(new MoveTo('Flow_1650rev'))@self
+      in('Flow_1650rev')@self
+      
+      eval(new CutGrass('Flow_0xckd21'))@self
+      in('Flow_0xckd21')@self
+      
+      eval(new ReturnToBase('Flow_01jpx6x'))@self
+      in('Flow_01jpx6x')@self
+}
